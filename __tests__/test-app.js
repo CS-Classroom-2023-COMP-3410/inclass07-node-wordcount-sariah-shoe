@@ -1,62 +1,81 @@
-const {
-    readFileContent,
-    getWordCounts,
-    colorWord,
-    printColoredLines
-} = require('../app.js');
+import 
 
+const fs = require('fs');
 const chalk = require('chalk');
 
-describe('readFileContent', () => {
-    it('should read content of declaration.txt', () => {
-        const content = readFileContent();
-        expect(typeof content).toBe('string');
-        expect(content.length).toBeGreaterThan(0);
-    });
-});
+/**
+ * Synchronously reads the content of 'declaration.txt'.
+ * @returns {string} The content of the file.
+ */
+function readFileContent() {
+    return fs.readFileSync('declaration.txt', 'utf8');
+}
 
-describe('getWordCounts', () => {
-    it('should return correct word count', () => {
-        const content = "Hello World! Hello!";
-        const result = getWordCounts(content);
-        expect(result).toEqual({
-            hello: 2,
-            world: 1
-        });
-    });
-});
-
-describe('colorWord', () => {
-    it('should color words based on frequency', () => {
-        expect(colorWord("test", 1)).toBe(chalk.blue("test"));
-        expect(colorWord("test", 3)).toBe(chalk.green("test"));
-        expect(colorWord("test", 7)).toBe(chalk.red("test"));
-    });
-});
-
-describe('printColoredLines', () => {
-    let consoleOutput = [];
-    const originalLog = console.log;
+/**
+ * Gets the word count from the content.
+ * @param {string} content The file content.
+ * @returns {Object} An object with words as keys and their occurrences as values.
+ */
+function getWordCounts(content) {
+    const wordCount = {};
+    const words = content.toLowerCase().split(/\W+/).filter(Boolean);
     
-    beforeEach(() => {
-        consoleOutput = [];
-        console.log = (output) => consoleOutput.push(output);
+    words.forEach(word => {
+        wordCount[word] = (wordCount[word] || 0) + 1;
     });
+    
+    return wordCount;
+}
 
-    afterEach(() => {
-        console.log = originalLog;
-    });
+/**
+ * Colors a word based on its frequency.
+ * @param {string} word The word to be colored.
+ * @param {number} count The frequency of the word.
+ * @returns {string} The colored word.
+ */
+function colorWord(word, count) {
+    if (count === 1) {
+        return chalk.blue(word);
+    } else if (count >= 2 && count <= 5) {
+        return chalk.green(word);
+    } else {
+        return chalk.red(word);
+    }
+}
 
-    it('should print colored lines', () => {
-        const content = `Hello World!
-Hello World!
-Bye World!`;
-        const wordCounts = getWordCounts(content);
-        
-        printColoredLines(content, wordCounts);
+/**
+ * Prints the first 15 lines of the content with colored words.
+ * @param {string} content The file content.
+ * @param {Object} wordCount The word occurrences.
+ */
+function printColoredLines(content, wordCount) {
+    const lines = content.split('\n').slice(0, 15);
 
-        expect(consoleOutput[0]).toBe(chalk.green('Hello') + ' ' + chalk.green('World') + ' ');
-        expect(consoleOutput[1]).toBe(chalk.green('Hello') + ' ' + chalk.green('World') + ' ');
-        expect(consoleOutput[2]).toBe(chalk.blue('Bye') + ' ' + chalk.green('World') + ' ');
-    });
-});
+    for (const line of lines) {
+        const coloredLine = line.split(/(\W+)/).map(word => {
+            if (/\w+/.test(word)) {
+                return colorWord(word, wordCount[word.toLowerCase()] || 0);
+            }
+            return word;
+        }).join('');
+
+        console.log(coloredLine);
+    }
+}
+
+/**
+ * Main function to read the file, count the word occurrences and print the colored lines.
+ */
+function processFile() {
+    const content = readFileContent();
+    const wordCount = getWordCounts(content);
+    printColoredLines(content, wordCount);
+}
+
+if (require.main === module) {
+    // This will execute only if the file is run directly.
+    processFile();
+}
+
+// Export the functions for testing
+module.exports = { readFileContent, getWordCounts, colorWord, printColoredLines, processFile };
